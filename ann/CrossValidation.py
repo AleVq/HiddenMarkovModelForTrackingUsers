@@ -37,33 +37,30 @@ class CrossValidator:
             valid_target= training_target[0:k]
             # for each round of the k-fold we consider a new network to train, validate and test,
             # a network with the same topology, but different training set, i.e. different weights
-            n= NeuralNetwork(np.array(nodes_per_layer), 'relu_approx')
+            n= NeuralNetwork(np.array(nodes_per_layer), 'sigmoid')
             # training phase
-            E = 1 # learning and validating until the net's error is as small as we want
+            E = 1  # learning and validating until the net's error is as small as we want
             while math.fabs(E) > self.eps:
-                n.bp_learning(training_set, training_target, self.eta, 5000)
-                errors = [] # all total errors on the instances of the actual test set
-                for j in range(valid_set.shape[0]-1): # validation
+                n.bp_learning(training_set, training_target, self.eta, 900)
+                errors = []  # all total errors on the instances of the actual test set
+                for j in range(valid_set.shape[0]-1):  # validation
                     errors.append(n.test(valid_set[j], valid_target[j]))
-                E = np.mean(errors) # compute the average error on the validation set
+                E = np.mean(errors)  # compute the average error on the validation set
+            print('round: ', i/k, ' , mean error: ', E)  # TODO
             # testing phase
             round_errs = []
             for i in range(0, test_set.shape[0]):
-                round_errs.append(n.test(test_set[i], test_target[i])) # compute error on the instance of the net
+                round_errs.append(n.test(test_set[i], test_target[i])) # compute error of the net on the instance
             # testing phase with threshold in output layer
             round_errs_theta = []
             pos_count_per_round = 0
             for i in range(0, test_set.shape[0]):
                 error = n.test_theta(test_set[i], test_target[i])
                 round_errs_theta.append(error) # compute error on the instance of the net
-                if(error == 0 ):
+                if np.all(error == 0):
                     pos_count_per_round += 1
             self.counter_of_pos_tests.append([actual_round, pos_count_per_round])
             self.rounds_avg_err_theta.append(np.mean(round_errs))
 
-def perc(x, n, r):
-    return (100*x)/(np.floor(n/r))
-
-
-if __name__ == '__main__':
-    print('CIAO')
+    def perc(self, x, n, r):
+        return (100*x)/(np.floor(n/r))
