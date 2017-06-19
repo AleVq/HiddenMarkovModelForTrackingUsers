@@ -3,6 +3,7 @@ print('Tensorflow version: ', tf.__version__)
 from DataParser import parse_data
 import numpy as np
 tf.set_random_seed(64)
+from sklearn import preprocessing, metrics
 
 
 class NeuralNetwork:
@@ -14,9 +15,9 @@ class NeuralNetwork:
         self.X = tf.placeholder(tf.float32, [None, self.features])
         self.Y_ = tf.placeholder(tf.float32, [None, self.targets])
         # layers' sizes
-        l1 = features * 3
-        l2 = features * 4
-        l3 = features * 3
+        l1 = features * 1
+        l2 = features * 2
+        l3 = features * 1
         # building layers with randomized values
         self.w1 = tf.Variable(tf.truncated_normal([self.features, l1], stddev=0.1))
         self.b1 = tf.Variable(tf.ones([l1]))
@@ -38,17 +39,23 @@ class NeuralNetwork:
         # training variables
         self.optimizer = tf.train.GradientDescentOptimizer(0.003)
         self.train_step = self.optimizer.minimize(self.cross_entropy)
+        # initializing session
         self.model = tf.train.Saver()
+        sess = tf.Session()
+        sess.run(self.init)
+        self.model.save(sess, "/tmp/model.ckpt")
 
     def train(self, training_x, training_y):
         train_data = {self.X: training_x, self.Y_: training_y}
-        sess = tf.Session()
-        sess.run(self.init)
-        sess.run(self.train_step, feed_dict=train_data)
-        # accuracy of the trained model, between 0 (worst) and 1 (best)
-        correct_prediction = tf.equal(tf.argmax(self.y, 1), tf.argmax(self.Y_, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        self.model.save(sess, "/tmp/model.ckpt")
+        with tf.Session() as sess:
+            self.model.restore(sess, "/tmp/model.ckpt")
+            sess.run(self.train_step, feed_dict=train_data)
+            # accuracy of the trained model, between 0 (worst) and 1 (best)
+            correct_prediction = tf.equal(tf.argmax(self.y, 1), tf.argmax(self.Y_, 1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            a = sess.run([accuracy], feed_dict=train_data)
+            self.model.save(sess, "/tmp/model.ckpt")
+        return a
 
     # input: input vector, supposed to be np.array
     def get_prediction(self, x):

@@ -34,5 +34,9 @@ def parse_data(data_fp, targets_fp):
             t = t + delta
         if 0 == (act[0] % 50):
             print(act[0], '...')
+    # dropping rows with all feature to 0:
+    ann_dataset = pd.DataFrame(ann_dataset)
+    non_null_features= (ann_dataset.ix[:, :(ann_dataset.shape[1]-2)].T != 0).any()
+    ann_dataset = ann_dataset.loc[non_null_features].reset_index(drop=True)
     print('Data parsed.')
     return pd.DataFrame(ann_dataset)
