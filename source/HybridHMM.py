@@ -1,6 +1,8 @@
 import tensorflow as tf
+
 sess = tf.Session()
 from keras import backend as k
+
 k.set_session(sess)
 from keras.models import Sequential
 from keras.layers import Dense
@@ -21,13 +23,14 @@ def convert_targets(self, targets):
 
 def encode_features_targets(ds):
     states_count = pd.Series.sort_index(ds.ix[:, ds.shape[1] - 1].value_counts()).shape[0]
-    features = ds.ix[:, :ds.shape[1] - 1]  # TODO mettere -2 quando torno a usare il dataparser
+    features = ds.ix[:, :ds.shape[1] - 1]
     encoded_targets = np.zeros((ds.shape[0], states_count))
     row = 0
     for t_value in ds.ix[:, ds.shape[1] - 1]:
         encoded_targets[row, int(t_value)] = 1.0
         row = row + 1
     return features, encoded_targets
+
 
 # input: ann output and target w.r.t. 1 single example
 def err_rate(pred, targets):
@@ -38,20 +41,20 @@ def err_rate(pred, targets):
     return err / l
 
 
-
 class HybridHMM:
     # ds: pandas DataFrame that contains the ds (training set),
     # state_frequency: pandas Series that contains the frequency which they appear with
-    def __init__(self, ds, ):
+    def __init__(self, ds):
         # separating features from targets
         # building one-hot encoded targets
         features, targets = encode_features_targets(ds)
         self.labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
-        self.f_priors = features.groupby(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']).size().reset_index(name='F_Priors')
+        self.f_priors = features.groupby(
+            ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']).size().reset_index(name='F_Priors')
         self.f_frequencies = self.f_priors['F_Priors'].divide(features.shape[0])
         del self.f_priors['F_Priors']
         self.ds = ds
-        self.state_frequency =  pd.Series.sort_index(ds.ix[:, ds.shape[1] - 1].value_counts())
+        self.state_frequency = pd.Series.sort_index(ds.ix[:, ds.shape[1] - 1].value_counts())
         self.states_count = self.state_frequency.shape[0]
         # priors prob. for hidden states
         self.pi = np.divide(self.state_frequency, ds.shape[0]).as_matrix()
@@ -68,9 +71,11 @@ class HybridHMM:
         X_test = features.ix[int(s - k):].reset_index(drop=True).as_matrix()
         Y_test = targets[int(targets.shape[0] - k):]
         model = Sequential()
-        model.add(Dense(12, activation='relu', input_shape=(12,)))
-        model.add(Dense(24, activation='relu'))
-        model.add(Dense(9, activation='softmax'))
+        model.add(Dense(self.o.shape[1], activation='relu', input_shape=(12,)))
+        model.add(Dense(2 * self.o.shape[1], activation='relu'))
+        model.add(Dense(3 * self.o.shape[1], activation='relu'))
+        model.add(Dense(2 * self.o.shape[1], activation='relu'))
+        model.add(Dense(self.states_count, activation='softmax'))
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
@@ -82,14 +87,14 @@ class HybridHMM:
     def get_prediction(self, x):
         return self.ann.predict(x)
 
-    def test(self, test_set):
+    def test(self, test_set, seq_length):
         features = test_set.ix[:, :test_set.shape[1] - 1].reset_index(drop=True).as_matrix()
-        targets = test_set.ix[:, test_set.shape[1]-1].reset_index(drop=True).as_matrix()
+        targets = test_set.ix[:, test_set.shape[1] - 1].reset_index(drop=True).as_matrix()
         error_rates = []
-        day = 60 *24  # express in segments
-        for t in range(0, features.shape[0]-day, day):  # 24 * 60 = day duration in minutes
-            hybrid_prediction = self.decode(features[t:(t+day), :])
-            error_rates.append(err_rate(hybrid_prediction, targets[t:(t+day)]))
+        seq_length = 60 * 24  # express in segments
+        for t in range(0, features.shape[0] - seq_length, seq_length):  # 24 * 60 = seq_length duration in minutes
+            hybrid_prediction = self.decode(features[t:(t + seq_length), :])
+            error_rates.append(err_rate(hybrid_prediction, targets[t:(t + seq_length)]))
         error_rate_mean = np.mean(error_rates)
         return error_rate_mean
 
