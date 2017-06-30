@@ -9,11 +9,8 @@ def parse_data(data_fp, targets_fp):
                                     header=0, parse_dates=[['Start', 'time'], ['End', 'time.1']])
     features = ds[['Location', 'Place']].drop_duplicates().reset_index(drop=True)
     states = pd.Series(target_activities.ix[:, -1].unique())  # identify activities
-    end = target_activities.ix[target_activities.shape[0]-1, 1]
-    start = target_activities.ix[0, 0]
     # interval vars
     delta = np.timedelta64(60, 's')
-    # ann_dataset = np.empty((0, features.shape[0]+1), int)
     ann_dataset = []
     ds_counter = 0
     for act in target_activities.iterrows():
@@ -33,7 +30,6 @@ def parse_data(data_fp, targets_fp):
             if ds.ix[ds_counter]['End_time.1'] <= t:
                 ds_counter += 1
             new_row = np.concatenate([active_sensors, mapped_act], axis=0)
-            # ann_dataset = np.append(ann_dataset, [new_row], axis=0)
             ann_dataset.append(new_row)
             t = t + delta
         if 0 == (act[0] % 50):
@@ -43,4 +39,4 @@ def parse_data(data_fp, targets_fp):
     non_null_features= (ann_dataset.ix[:, :(ann_dataset.shape[1]-2)].T != 0).any()
     ann_dataset = ann_dataset.loc[non_null_features].reset_index(drop=True)
     print('Data parsed.')
-    return ann_dataset
+    return ann_dataset, states
