@@ -9,7 +9,6 @@ from keras.models import Sequential
 from keras.layers import Dense
 import numpy as np
 import pandas as pd
-from sklearn import preprocessing
 from TransitionMatrixGen import build_transmat
 
 

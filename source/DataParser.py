@@ -39,4 +39,4 @@ def parse_data(data_fp, targets_fp):
     non_null_features= (ann_dataset.ix[:, :(ann_dataset.shape[1]-2)].T != 0).any()
     ann_dataset = ann_dataset.loc[non_null_features].reset_index(drop=True)
     print('Data parsed.')
-    return ann_dataset, states
+    return ann_dataset, states, features
