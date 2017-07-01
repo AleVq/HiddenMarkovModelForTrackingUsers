@@ -12,7 +12,7 @@ def reverse(a):
 
 class CrossValidator:
     # input: data and targets file-paths, k of k-fold,
-    # input: length of observations' sequence for viterbi alg
+    # input: length of observations' sequence for viterbi algorithm
     # input: size of test set for the k-fold cross val.
     def __init__(self, data_fp, targets_fp, subset_size, fp, ds_label):
         if not(os.path.isfile(fp)):

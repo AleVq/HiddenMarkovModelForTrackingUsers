@@ -41,7 +41,7 @@ class HybridHMM:
         # priors prob. for hidden states
         self.pi = np.divide(self.state_frequency, ds.shape[0]).as_matrix()
         self.states_count = self.state_frequency.shape[0]
-        self.o = np.zeros([self.states_count, ds.shape[1]-1])  # initialized to zero
+        self.features_count = ds.shape[1]-1
         self.t = build_transmat(ds, self.states_count)
 
     # neural network training
@@ -53,10 +53,10 @@ class HybridHMM:
         X_train = features.reset_index(drop=True).as_matrix()
         Y_train = targets
         model = Sequential()
-        model.add(Dense(self.o.shape[1], activation='relu', input_shape=(12,)))
-        model.add(Dense(2 * self.o.shape[1], activation='relu'))
-        model.add(Dense(3 * self.o.shape[1], activation='relu'))
-        model.add(Dense(2 * self.o.shape[1], activation='relu'))
+        model.add(Dense(self.features_count, activation='relu', input_shape=(12,)))
+        model.add(Dense(2 * self.features_count, activation='relu'))
+        model.add(Dense(3 * self.features_count, activation='relu'))
+        model.add(Dense(2 * self.features_count, activation='relu'))
         model.add(Dense(self.states_count, activation='softmax'))
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
