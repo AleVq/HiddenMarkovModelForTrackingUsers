@@ -9,9 +9,15 @@ from keras.models import Sequential
 from keras.layers import Dense
 import numpy as np
 import pandas as pd
-from TransitionMatrixGen import build_transmat
+from sklearn import preprocessing
 
 
+# input:
+# ds = dataset from which features and targets will be extracted, pandas DataFrame
+# states_count = number of possible states, int
+# output:
+# encoded features, pandas Dataframe
+# encoded targets, numpy ndarray
 def encode_features_targets(ds, states_count):
     features = ds.ix[:, :ds.shape[1] - 1]
     encoded_targets = np.zeros((ds.shape[0], states_count))
@@ -22,7 +28,11 @@ def encode_features_targets(ds, states_count):
     return features, encoded_targets
 
 
-# input: ann output and target w.r.t. 1 single example
+# input:
+# pred = hybrid model's output states sequence, numpy ndarray
+# targets = target states sequence, numpy ndarray
+# output:
+# error of the prediction, float
 def err_rate(pred, targets):
     err = 0
     l = len(pred)
@@ -31,9 +41,27 @@ def err_rate(pred, targets):
     return err / l
 
 
+# input:
+# ds = dataset, pandas DataFrame
+# num_states = number of possible states, int
+# output:
+# HMM's transition matrix, numpy ndarray
+def build_transmat(ds, num_states):
+    trans_matrix = np.zeros((num_states, num_states))
+    # identifying activity x-th and (x+1)th
+    for x in ds.iterrows():
+        if x[0] == ds.shape[0] - 2:  # the last element has no transition obviously
+            break
+        a1 = int(x[1].iloc[-1])
+        a2 = int(ds.iloc[x[0] + 1].iloc[-1])
+        trans_matrix[a1, a2] = trans_matrix[a1, a2] + 1
+    # normalizing transition matrix
+    return preprocessing.normalize(trans_matrix, norm='l1')
+
+
 class HybridHMM:
-    # ds: pandas DataFrame that contains the ds (training set),
-    # state_frequency: pandas Series that contains the frequency which they appear with
+    # input:
+    # ds = training set, pandas DataFrame
     def __init__(self, ds):
         # separating features from targets
         # building one-hot encoded targets
@@ -41,17 +69,17 @@ class HybridHMM:
         # priors prob. for hidden states
         self.pi = np.divide(self.state_frequency, ds.shape[0]).as_matrix()
         self.states_count = self.state_frequency.shape[0]
-        self.features_count = ds.shape[1]-1
+        self.features_count = ds.shape[1] - 1
         self.t = build_transmat(ds, self.states_count)
 
     # neural network training
-    # input: training set
+    # input: training set, pandas DataFrame
     def train(self, training_set):
         features, targets = encode_features_targets(training_set, self.states_count)
         s = features.shape[0]
-        k = s / 10
         X_train = features.reset_index(drop=True).as_matrix()
         Y_train = targets
+        # setting model's architecture
         model = Sequential()
         model.add(Dense(self.features_count, activation='relu', input_shape=(12,)))
         model.add(Dense(2 * self.features_count, activation='relu'))
@@ -65,6 +93,10 @@ class HybridHMM:
                   batch_size=1440, epochs=10, verbose=0)
         model.save('my_model.h5')
 
+    # input:
+    # test_set = testing set, pandas DataFrame
+    # output:
+    # error of hybrid model, error of neural network, hybrid's prediction, target obs sequence
     def test(self, test_set):
         features = test_set.ix[:, :test_set.shape[1] - 1].reset_index(drop=True).as_matrix()
         targets = test_set.ix[:, test_set.shape[1] - 1].reset_index(drop=True).as_matrix()
@@ -76,8 +108,10 @@ class HybridHMM:
         error_rate = err_rate(hybrid_prediction, targets)
         return error_rate, score[1], np.array(hybrid_prediction), targets
 
-    # input: sequence of observations
-    # output: most likely sequence of states
+    # input:
+    # obs_seq = sequence of observations, numpy ndarray
+    # output:
+    # most likely sequence of states, python's list
     def decode(self, obs_seq):
         model = load_model('my_model.h5')
         forward = np.zeros((self.states_count, len(obs_seq)))

@@ -6,10 +6,6 @@ import os.path
 import math
 
 
-def reverse(a):
-    return 1-a
-
-
 class CrossValidator:
     # input: data and targets file-paths, k of k-fold,
     # input: length of observations' sequence for viterbi algorithm
@@ -39,7 +35,7 @@ class CrossValidator:
             test = pd.DataFrame(np.vstack((prediction, targets)).T)  # getting prediction and targets together
             test.columns = ['predictions', 'targets']
             # printing just 3 examples diagrams of predictions vs targets
-            if i <3 :
+            if i < 3:
                 ax = test.plot()
                 ax.set_xlabel('time segments')
                 ax.set_ylabel('activities')
@@ -51,7 +47,7 @@ class CrossValidator:
             print('Fold: ', i, 'error on test: ', test_err, ' err of ann: ', (1 - nn_accuracy))
             results.append(test_err)
             nn_accuracies.append(nn_accuracy)
-        nn_err = np.apply_along_axis(reverse, 0, np.array(nn_accuracies))
+        nn_err = np.apply_along_axis(lambda x: 1-x, 0, np.array(nn_accuracies))
         total_errs = pd.DataFrame(np.vstack((np.array(results), nn_err)).T)
         total_errs.columns = ['hybrid model', 'neural network']
         ax = total_errs.plot()
@@ -63,8 +59,10 @@ class CrossValidator:
             ax.get_figure().savefig('../images/B/errs.eps', format='eps')
         print('Average error on tests among k-fold: ', np.mean(np.array(results)))
         print('Average error of nn on tests among k-fold: ', (1 - np.mean(np.array(nn_accuracies))))
-        pd.DataFrame(results).to_csv(path_or_buf='../results.csv', index=False, sep=';')
-        pd.DataFrame(nn_accuracies).to_csv(path_or_buf='../NNresults.csv', index=False, sep=';')
+        results_to_csv = np.vstack((np.array(results), np.array(nn_err))).T
+        pd.DataFrame(results_to_csv).to_csv(path_or_buf='../results_%s.csv' %ds_label, index=False, sep=';')
+        # pd.DataFrame(results).to_csv(path_or_buf='../results.csv', index=False, sep=';')
+        # pd.DataFrame(nn_accuracies).to_csv(path_or_buf='../NNresults.csv', index=False, sep=';')
 
 
 def execute_my_hmm():
