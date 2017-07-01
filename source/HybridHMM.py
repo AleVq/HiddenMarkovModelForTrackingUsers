@@ -96,7 +96,9 @@ class HybridHMM:
     # input:
     # test_set = testing set, pandas DataFrame
     # output:
-    # error of hybrid model, error of neural network, hybrid's prediction, target obs sequence
+    # error of hybrid model, error of neural network, both int
+    # hybrid's prediction, numpy array
+    # target obs sequence, numpy ndarray
     def test(self, test_set):
         features = test_set.ix[:, :test_set.shape[1] - 1].reset_index(drop=True).as_matrix()
         targets = test_set.ix[:, test_set.shape[1] - 1].reset_index(drop=True).as_matrix()

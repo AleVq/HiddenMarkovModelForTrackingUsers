@@ -2,6 +2,13 @@ import numpy as np
 import pandas as pd
 
 
+# input:
+# data_fp = file path of sensors' dataset, string
+# targets_fp = file path of activities' dataset, string
+# output:
+# aligned dataset, pandas DataFrame
+# mapping of states, pandas Series
+# mapping of features, pandas Series
 def parse_data(data_fp, targets_fp):
     print('Parsing data..', 'Number of parsed activities:')
     ds = pd.read_csv(data_fp, sep='\s+', header=0, parse_dates=[['Start', 'time'], ['End', 'time.1']])
