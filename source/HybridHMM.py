@@ -108,7 +108,7 @@ class HybridHMM:
         model = load_model('my_model.h5')
         score = model.evaluate(x.as_matrix(), y, verbose=0)
         error_rate = err_rate(hybrid_prediction, targets)
-        return error_rate, score[1], np.array(hybrid_prediction), targets
+        return error_rate, score[1], np.array(hybrid_prediction), targets.astype(int)
 
     # input:
     # obs_seq = sequence of observations, numpy ndarray
